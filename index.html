@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Playwrite+CU:wght@100..400&display=swap" rel="stylesheet">
+    <title>Zodiac Wheel</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0d0d0d;
+            overflow: hidden;
+            position: relative;
+            font-family: 'Arial', sans-serif;
+        }
+
+        h3 {
+            font-family: "Playwrite CU", system-ui;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: bold;
+            color: #ffd700;
+        }
+
+        h4 {
+            font-family: "Playwrite CU", system-ui;
+            font-optical-sizing: auto;
+            font-weight: 200;
+            font-style: thin;
+            color: #ffd700;
+        }
+
+        #tsparticles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .header {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            font-size: 2em;
+            letter-spacing: 2px;
+            z-index: 10;
+            opacity: 0;
+        }
+
+        .modal .sign-name, .modal .sign-health, .modal .sign-finance, .modal .sign-love {
+            color: white;
+        }
+
+        #signDates {
+            font-family: "Playwrite CU", system-ui;
+            font-optical-sizing: auto;
+            font-weight: 100;
+            font-style: thin;
+        }
+
+
+        #zodiacCanvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            z-index: 5;
+            position: relative;
+            opacity: 0;
+        }
+
+        #zodiacInfo {
+            position: absolute;
+            top: 85%;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            text-align: center;
+            font-family: 'Playwright Cuba', sans-serif;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .card-3d-container {
+            position: absolute;
+            width: 300px;
+            height: 400px;
+            perspective: 1000px;
+            z-index: 2;
+            margin: 0 auto;
+        }
+
+        .card-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: #222;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            animation: rotate3d 5s infinite alternate;
+        }
+
+        .card-3d img {
+            width: 100%;
+            height: 90%;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .card-3d .sign-description {
+            font-size: 1em;
+            color: white;
+            text-align: center;
+            margin: 10px;
+        }
+
+        .modal {
+            transform: translateY(-50%) scale(0);
+        }
+
+        .modal.right .card-3d {
+            background: url('zodiacs/placeholder.webp') no-repeat center center;
+            background-size: cover;
+            opacity: 0.7;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            color: white;
+        }
+
+        @keyframes rotate3d {
+            0%, 100% {
+                transform: rotateY(10deg) rotateX(5deg);
+            }
+            50% {
+                transform: rotateY(-10deg) rotateX(-5deg);
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="tsparticles"></div>
+    <div class="header">Know your Zodiac</div>
+<div class="modal left card-3d-container" style="top: 50%; left: 10%;">
+    <div class="card-3d">
+        <img class="sign-image" src="zodiacs/placeholder.webp" alt="Zodiac Sign Image" />
+        <div class="sign-description">Dynamic, determined, and confident, Aries is a natural leader.</div>
+    </div>
+</div>
+<div class="modal right card-3d-container" style="top: 50%; right: 10%;">
+    <div class="card-3d">
+        <h2>Yearly Forecast (2024)</h2>
+        <div class="sign-health">Health: Aries 2024</div>
+        <div class="sign-detail">Good energy flow throughout the year, but watch out for stress in early summer.</div>
+        <div class="sign-finance">Finance: Aries 2024</div>
+        <div class="sign-detail">Stable growth with a promising investment opportunity in late autumn.</div>
+        <div class="sign-love">Love: Aries 2024</div>
+        <div class="sign-detail">Romantic highs in spring, focus on communication to avoid conflicts in November.</div>
+    </div>
+</div>
+
+    <canvas id="zodiacCanvas"></canvas>
+    <div id="zodiacInfo" style="text-align: center; margin-top: 20px; font-family: 'Playwright Cuba', sans-serif; color: white;">
+        <div id="signName" style="font-size: 2em; opacity: 0;"></div>
+        <div id="signDates" style="font-size: 1.2em; opacity: 0; margin-top: 5px;"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.0/tsparticles.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        tsParticles.load("tsparticles", {
+            fpsLimit: 60,
+            background: {
+                color: "#0d0d0d",
+            },
+            particles: {
+                number: {
+                    value: 120,
+                    density: {
+                        enable: true,
+                        value_area: 800,
+                    }
+                },
+                color: {
+                    value: ["#ffffff", "#ffe4b5", "#ffd700"],
+                },
+                shape: {
+                    type: "circle",
+                },
+                opacity: {
+                    value: 0.8,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 1,
+                        opacity_min: 0.3,
+                        sync: false,
+                    },
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: {
+                        enable: true,
+                        speed: 4,
+                        size_min: 0.3,
+                        sync: false,
+                    },
+                },
+                move: {
+                    enable: true,
+                    speed: 0.5,
+                    direction: "none",
+                    random: false,
+                    straight: false,
+                    out_mode: "out",
+                    attract: {
+                        enable: false,
+                    },
+                },
+            },
+            interactivity: {
+                detectsOn: "canvas",
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: "repulse",
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: "push",
+                    },
+                    resize: true,
+                },
+                modes: {
+                    repulse: {
+                        distance: 100,
+                        duration: 0.4,
+                    },
+                    push: {
+                        particles_nb: 4,
+                    },
+                },
+            },
+            retina_detect: true,
+        });
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('zodiacCanvas'), antialias: true, alpha: true });
+        renderer.setClearColor(0x000000, 0);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        camera.position.set(0, 0, 30);
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        directionalLight.position.set(5, 5, 5).normalize();
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 1);
+        pointLight.position.set(0, 0, 30);
+        scene.add(pointLight);
+
+        const transparentBorderMaterial = new THREE.MeshBasicMaterial({
+            color: 0xFFFFFF,
+            transparent: true,
+            opacity: 0.0,
+            wireframe: true,
+        });
+
+        const zodiacGroup = new THREE.Group();
+        const zodiacSigns = [
+            { name: "Aries", dates: "Mar 21 - Apr 19", description: "Dynamic, determined, and confident, Aries is a natural leader.", health: "Good energy flow throughout the year, but watch out for stress in early summer.", finance: "Stable growth with a promising investment opportunity in late autumn.", love: "Romantic highs in spring, focus on communication to avoid conflicts in November.", color: "#FFFFFF", image: "aries.webp", letter: "♈︎" },
+            { name: "Taurus", dates: "Apr 20 - May 20", description: "Reliable and patient, Taurus is known for its dedication and strength.", health: "Maintain a healthy balance to avoid overexertion, especially in June.", finance: "Consistent savings will pay off by the end of the year.", love: "Opportunities for new romantic beginnings in August.", color: "#FFFFFF", image: "taurus.webp", letter: "♉︎" },
+            { name: "Gemini", dates: "May 21 - Jun 20", description: "Adaptable and curious, Gemini is an intellectual sign full of energy.", health: "Focus on mental health in mid-2024; relaxation techniques will be beneficial.", finance: "Unexpected expenses in early summer, but recovery by winter.", love: "Exciting romantic developments in early spring; stay open-minded.", color: "#FFFFFF", image: "gemini.webp", letter: "♊︎" },
+            { name: "Cancer", dates: "Jun 21 - Jul 22", description: "Emotional and caring, Cancer is deeply intuitive and loyal to loved ones.", health: "Stable health overall, but avoid overindulgence in late autumn.", finance: "Positive financial changes in September; cautious investments are key.", love: "Emotional clarity in relationships around July; be honest with your feelings.", color: "#FFFFFF", image: "cancer.webp", letter: "♋︎" },
+            { name: "Leo", dates: "Jul 23 - Aug 22", description: "Bold, creative, and charismatic, Leo thrives in the spotlight.", health: "Stay active to balance the high energy levels, especially in spring.", finance: "Opportunities for career growth in October; financial windfall possible.", love: "Summer brings passionate encounters; avoid drama in November.", color: "#FFFFFF", image: "leo.webp", letter: "♌︎" },
+            { name: "Virgo", dates: "Aug 23 - Sep 22", description: "Analytical and detail-oriented, Virgo is practical and grounded.", health: "Focus on diet and exercise in the second half of the year.", finance: "Financial stability remains; prudent decisions will pay off by December.", love: "Meaningful connections may form in March; be open to new experiences.", color: "#FFFFFF", image: "virgo.webp", letter: "♍︎" },
+            { name: "Libra", dates: "Sep 23 - Oct 22", description: "Balanced and harmonious, Libra is a lover of beauty and fairness.", health: "Balance is key; ensure a mix of physical and mental well-being.", finance: "Collaborative projects may lead to financial gain in May.", love: "New love interests likely in June; focus on harmony in relationships.", color: "#FFFFFF", image: "libra.webp", letter: "♎︎" },
+            { name: "Scorpio", dates: "Oct 23 - Nov 21", description: "Passionate and resourceful, Scorpio is a deeply intense and loyal sign.", health: "Renewed vigor in early 2024; stay mindful of overworking.", finance: "Financial challenges in February, but recovery by August.", love: "Intense romantic opportunities in April; be clear about your intentions.", color: "#FFFFFF", image: "scorpio.webp", letter: "♏︎" },
+            { name: "Sagittarius", dates: "Nov 22 - Dec 21", description: "Adventurous and free-spirited, Sagittarius loves to explore and learn.", health: "Maintain a balanced lifestyle to avoid burnout in late summer.", finance: "Unexpected income sources in November; savings strategy pays off.", love: "Romantic adventures likely in September; embrace spontaneity.", color: "#FFFFFF", image: "sagittarius.webp", letter: "♐︎" },
+            { name: "Capricorn", dates: "Dec 22 - Jan 19", description: "Ambitious and disciplined, Capricorn is a master of self-control and leadership.", health: "Focus on stress management techniques, particularly in early autumn.", finance: "Significant financial gains in October; remain disciplined in spending.", love: "Love life intensifies in February; avoid misunderstandings in December.", color: "#FFFFFF", image: "capricorn.webp", letter: "♑︎" },
+            { name: "Aquarius", dates: "Jan 20 - Feb 18", description: "Innovative and independent, Aquarius is known for its forward-thinking and humanitarian spirit.", health: "Stay active and engaged to keep up energy levels in mid-2024.", finance: "A major investment opportunity arises in July; tread carefully.", love: "New romantic connections in January; be ready for surprises.", color: "#FFFFFF", image: "aquarius.webp", letter: "♒︎" },
+            { name: "Pisces", dates: "Feb 19 - Mar 20", description: "Compassionate and artistic, Pisces is deeply empathetic and intuitive.", health: "Ensure adequate rest in April; listen to your body's needs.", finance: "Financial clarity improves in September; long-term planning is favored.", love: "Heightened romantic intuition in March; trust your instincts.", color: "#FFFFFF", image: "pisces.webp", letter: "♓︎" }
+        ];
+
+        const radius = 10;
+        const segmentAngle = (2 * Math.PI) / zodiacSigns.length;
+
+        const loader = new THREE.FontLoader();
+
+
+        function createTextTexture(text, color = 'black') {
+            const canvas = document.createElement('canvas');
+            const size = 4096;
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
+            
+            context.clearRect(0, 0, size, size);
+            context.font = 'Bold 800px Arial';
+            context.fillStyle = color;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            
+            context.fillText(text, size / 2, size / 2);  
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+
+
+        zodiacSigns.forEach((sign, index) => {
+            const geometry = new THREE.PlaneGeometry(5, 5);
+
+            const material = new THREE.MeshStandardMaterial({
+                color: sign.color,
+                side: THREE.DoubleSide,
+                emissive: 0xdddddd,
+                metalness: 0.5,
+                roughness: 0.2
+            });
+
+            const slice = new THREE.Mesh(geometry, material);
+
+            slice.position.set(
+                radius * Math.cos(index * segmentAngle),
+                radius * Math.sin(index * segmentAngle),
+                0
+            );
+            
+            slice.rotation.z = index * segmentAngle;
+            slice.lookAt(0, 0, 0);
+
+            slice.userData = { sign, originalMaterial: material };
+
+            const spriteMaterial = new THREE.SpriteMaterial({ map: createTextTexture(sign.letter, 'black'), transparent: true });
+            const sprite = new THREE.Sprite(spriteMaterial);
+
+            sprite.scale.set(8, 8, 8);
+
+            slice.userData.sprite = sprite;
+
+            slice.add(sprite);
+
+            zodiacGroup.add(slice);
+        });
+
+        scene.add(zodiacGroup);
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        let currentlySelectedSlice = null;
+
+        function onMouseClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(zodiacGroup.children);
+
+            if (intersects.length > 0) {
+                const selectedObject = intersects[0].object;
+
+                if (currentlySelectedSlice) {
+                    currentlySelectedSlice.material = currentlySelectedSlice.userData.originalMaterial;
+                    
+                    const previousSprite = currentlySelectedSlice.userData.sprite;
+                    previousSprite.material.map = createTextTexture(currentlySelectedSlice.userData.sign.letter, 'black');
+                    previousSprite.material.map.needsUpdate = true;
+                }
+
+                selectedObject.material = transparentBorderMaterial;
+
+                const currentSprite = selectedObject.userData.sprite;
+                currentSprite.material.map = createTextTexture(selectedObject.userData.sign.letter, 'white');
+                currentSprite.material.map.needsUpdate = true;
+
+                currentlySelectedSlice = selectedObject;
+
+                showModal(selectedObject.userData.sign);
+            }
+        }
+
+
+
+
+        window.addEventListener('click', onMouseClick, false);
+
+        function showModal(sign) {
+            const leftModal = document.querySelector('.modal.left');
+            const rightModal = document.querySelector('.modal.right');
+
+            if (!leftModal || !rightModal) {
+                console.error("Left or right modal not found.");
+                return;
+            }
+
+            const signImage = leftModal.querySelector('.sign-image');
+            const signDescription = leftModal.querySelector('.sign-description');
+            const signHealth = rightModal.querySelector('.sign-health');
+            const signFinance = rightModal.querySelector('.sign-finance');
+            const signLove = rightModal.querySelector('.sign-love');
+
+            if (signImage) {
+                signImage.src = `zodiacs/${sign.image}`;
+            } else {
+                console.error("Sign image element not found.");
+                return;
+            }
+
+            if (signDescription) {
+                signDescription.textContent = sign.description;
+            } else {
+                console.error("Sign description element not found.");
+                return;
+            }
+
+            if (signHealth) signHealth.textContent = `Health: ${sign.health}`;
+            if (signFinance) signFinance.textContent = `Finance: ${sign.finance}`;
+            if (signLove) signLove.textContent = `Love: ${sign.love}`;
+
+            const isLeftModalOpen = leftModal.style.display === 'flex';
+            const isRightModalOpen = rightModal.style.display === 'flex';
+
+            if (!isLeftModalOpen) {
+                leftModal.style.display = 'flex';
+                gsap.to(leftModal, {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 0.8,
+                    ease: 'elastic.out(1, 0.3)',
+                    onComplete: () => {
+                        if (!isRightModalOpen) {
+                            rightModal.style.display = 'flex';
+                            gsap.to(rightModal, {
+                                scale: 1,
+                                opacity: 1,
+                                duration: 0.8,
+                                ease: 'elastic.out(1, 0.3)',
+                                delay: 0.5,
+                                onComplete: () => {
+                                    animateNameAndDates(sign.name, sign.dates);
+                                }
+                            });
+                        } else {
+                            animateNameAndDates(sign.name, sign.dates);
+                        }
+                    }
+                });
+            } else if (!isRightModalOpen) {
+                rightModal.style.display = 'flex';
+                gsap.to(rightModal, {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 0.8,
+                    ease: 'elastic.out(1, 0.3)',
+                    delay: 0.5, // Adjust delay if needed
+                    onComplete: () => {
+                        animateNameAndDates(sign.name, sign.dates);
+                    }
+                });
+            } else {
+                animateNameAndDates(sign.name, sign.dates);
+            }
+        }
+
+        function animateNameAndDates(name, dates) {
+            const signNameDiv = document.getElementById('signName');
+            const signDatesDiv = document.getElementById('signDates');
+
+            if (signNameDiv && signDatesDiv) {
+                signNameDiv.textContent = '';
+                signDatesDiv.textContent = '';
+
+                gsap.to(signNameDiv, { opacity: 1, duration: 0.5 });
+                name.split('').forEach((letter, index) => {
+                    setTimeout(() => {
+                        signNameDiv.textContent += letter;
+                    }, index * 100);
+                });
+
+                setTimeout(() => {
+                    gsap.to(signDatesDiv, { opacity: 1, duration: 1 });
+                    signDatesDiv.textContent = dates;
+                }, name.length * 100 + 200);
+            } else {
+                console.error("Name or Dates element not found.");
+            }
+        }
+
+        function startAnimationSequence() {
+            gsap.to('#zodiacCanvas', { opacity: 1, duration: 1.5, delay: 1 });
+
+            gsap.to('.header', { opacity: 1, duration: 1.5, y: 20, ease: 'power2.out', delay: 3 });
+
+            gsap.to(zodiacGroup.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 1.5, ease: 'elastic.out(1, 0.3)', delay: 5 });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            zodiacGroup.rotation.z += 0.001;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+        startAnimationSequence();
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    </script>
+</body>
+</html>
+
